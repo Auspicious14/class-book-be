@@ -14,6 +14,12 @@ router.post(
   createNewHall
 );
 router.get("/halls", authenticate, getAllHalls);
-router.post("/book", authenticate, authorize(["classRep"]), BookHall);
+router.post(
+  "/book/hall",
+  authenticate,
+  authorize(["classRep, admin"]),
+  BookHall
+);
+router.post("/create/hall", authenticate, authorize(["admin"]), createNewHall);
 
 export default router;

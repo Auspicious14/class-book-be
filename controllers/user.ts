@@ -6,23 +6,23 @@ import { generateOTP } from "../middlewares/generateOTP";
 import { sendEmail } from "../middlewares/email";
 
 export const signUp = async (req: Request, res: Response) => {
-  const { email, password, role } = req.body;
+  const { firstName, lastName, email, password, role } = req.body;
 
   try {
     const existingUser = await userModel.findOne({ email });
 
-    if (existingUser) res.json("User already exists");
+    if (existingUser) res.json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new userModel({
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
       role,
     });
     await user.save();
-    role == "student"
-      ? res.json("User registered successfully")
-      : res.json("Rep registered successfully");
+    res.json({ message: "Registered successfully" });
   } catch (error) {
     res.json(error);
   }
@@ -33,16 +33,28 @@ export const Login = async (req: Request, res: Response) => {
   const user = await userModel.findOne({ email });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.json("Invalid email or password");
+    return res.json({ message: "Invalid email or password" });
   }
 
   const token = jwt.sign(
-    { _id: user._id, role: user.role },
+    {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+    },
     process.env.JWT_SECRET!
   );
   res.json({
-    data: { _id: user?._id, email: user?.email, role: user?.role },
+    data: {
+      _id: user?._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user?.email,
+      role: user?.role,
+    },
     token,
+    message: "Login successully",
   });
 };
 
