@@ -5,6 +5,7 @@ import { sendEmail } from "../middlewares/email";
 
 export const createNewHall = async (req: Request, res: Response) => {
   const { name, location } = req.body;
+  console.log(name, location);
   const lectureHall = new lectureHallModel({ name, location });
 
   try {
@@ -18,7 +19,7 @@ export const createNewHall = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(400).send(error);
+    res.json(error);
   }
 };
 

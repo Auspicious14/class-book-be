@@ -7,12 +7,7 @@ import {
 import { authenticate, authorize } from "../middlewares/authenticate";
 const router = express.Router();
 
-router.post(
-  "/create/hall",
-  authenticate,
-  authorize(["classRep"]),
-  createNewHall
-);
+router.post("/create/hall", authenticate, authorize(["admin"]), createNewHall);
 router.get("/halls", authenticate, getAllHalls);
 router.post(
   "/book/hall",
@@ -20,6 +15,5 @@ router.post(
   authorize(["classRep, admin"]),
   BookHall
 );
-router.post("/create/hall", authenticate, authorize(["admin"]), createNewHall);
 
 export default router;
