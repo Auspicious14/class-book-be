@@ -1,10 +1,10 @@
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config();
 import authRouter from "./routes/auth";
 import hallRouter from "./routes/hall";
 import cors from "cors";
 import express, { Request, Response, NextFunction } from "express";
-const cookieParser = require("cookie-parser");
+import cookieParser from "cookie-parser";
 export const appRoute = express();
 
 appRoute.use(cors());
