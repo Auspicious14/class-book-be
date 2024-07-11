@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { userModel } from "../models/user";
-import { generateOTP } from "../middlewares/generateOTP";
+import { generateOTP } from "../middlewares/generateOtp";
 import { sendEmail } from "../middlewares/email";
 
 export const signUp = async (req: Request, res: Response) => {
