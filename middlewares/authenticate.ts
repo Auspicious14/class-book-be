@@ -19,9 +19,18 @@ export const authenticate = (
 
 export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes((req as any).user.role)) {
-      return res.status(403).send("Access denied.");
+    const user = (req as any).user;
+
+    if (!user) {
+      return res.status(401).send("User not authenticated.");
     }
-    next();
+
+    const userRole = user.role;
+
+    if (roles.includes(userRole)) {
+      return next();
+    }
+
+    return res.status(403).send("Access denied!!");
   };
 };

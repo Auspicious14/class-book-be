@@ -34,10 +34,10 @@ export const BookHall = async (req: Request, res: Response) => {
   const classDuration = new Date(duration).getHours();
 
   const lectureHall = await lectureHallModel.findById(hallId);
-  if (!lectureHall) return res.status(404).send("Lecture hall not found");
+  if (!lectureHall) return res.json("Lecture hall not found");
 
   if (to && to > new Date()) {
-    return res.status(400).send("Lecture hall is already booked");
+    return res.json("Lecture hall is already booked");
   }
 
   // lectureHall.bookedTo = to;
@@ -45,15 +45,16 @@ export const BookHall = async (req: Request, res: Response) => {
   try {
     // await lectureHall.save();
 
-    const students = await userModel.find({ role: "student" });
-    const studentEmails = students.map((student) => student.email);
+    const users = await userModel.find();
+    const usersEmail = users.map((user) => user.email);
+    console.log(usersEmail, "emails");
 
     const text = `Lecture hall ${lectureHall.name} has been booked ${from} until ${to}. The booking span ${classDuration} hours`;
 
-    sendEmail(studentEmails, "Requesting Password Reset", JSON.stringify(text));
+    sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
 
-    res.send("Lecture hall booked and students notified");
+    res.json({ message: "Lecture hall booked and students notified" });
   } catch (error) {
-    res.status(400).send(error);
+    res.json(error);
   }
 };

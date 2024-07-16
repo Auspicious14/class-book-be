@@ -12,7 +12,7 @@ router.get("/halls", authenticate, getAllHalls);
 router.post(
   "/book/hall",
   authenticate,
-  authorize(["classRep, admin"]),
+  authorize(["classRep", "admin"]),
   BookHall
 );
 
