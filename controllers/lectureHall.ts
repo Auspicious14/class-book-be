@@ -34,8 +34,8 @@ export const BookHall = async (req: Request, res: Response) => {
   const classDuration = new Date(duration).getHours();
 
   const lectureHall = await lectureHallModel.findById(hallId);
+  console.log(lectureHall, "lll");
   if (!lectureHall) return res.json("Lecture hall not found");
-
   if (to && to > new Date()) {
     return res.json("Lecture hall is already booked");
   }
