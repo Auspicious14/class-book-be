@@ -29,27 +29,59 @@ export const getAllHalls = async (req: Request, res: Response) => {
 
 export const BookHall = async (req: Request, res: Response) => {
   const { hallId, duration, bookedTo, bookedFrom } = req.body;
-  const to = new Date(bookedTo);
-  const from = new Date(bookedFrom);
   const classDuration = new Date(duration).getHours();
 
-  const lectureHall = await lectureHallModel.findById(hallId);
-  console.log(lectureHall, "lll");
-  if (!lectureHall) return res.json("Lecture hall not found");
-  if (to && to > new Date()) {
-    return res.json("Lecture hall is already booked");
+  const bookedFromDate = new Date(bookedFrom);
+  const bookedToDate = new Date(bookedTo);
+
+  if (bookedFromDate < new Date()) {
+    return res.json({ message: "Booking start time must be in the future" });
   }
 
-  // lectureHall.bookedTo = to;
+  if (bookedToDate <= bookedFromDate) {
+    return res.json({
+      message: "Booking end time must be after the start time",
+    });
+  }
 
   try {
-    // await lectureHall.save();
+    const lectureHall = await lectureHallModel.findById(hallId);
+
+    if (!lectureHall) {
+      return res.status(404).json("Lecture hall not found");
+    }
+
+    const overlappingBooking = await lectureHallModel.findOne({
+      _id: hallId,
+      $or: [
+        {
+          "bookings.bookedFrom": { $lt: bookedToDate },
+          "bookings.bookedTo": { $gt: bookedFromDate },
+        },
+      ],
+    });
+
+    if (overlappingBooking) {
+      return res
+        .status(400)
+        .json("Lecture hall is already booked for the requested time");
+    }
+
+    const newBooking = {
+      bookedFrom: bookedFromDate,
+      bookedTo: bookedToDate,
+    };
+
+    await lectureHallModel.updateOne(
+      { _id: hallId },
+      { $push: { bookings: newBooking } }
+    );
 
     const users = await userModel.find();
     const usersEmail = users.map((user) => user.email);
-    console.log(usersEmail, "emails");
 
-    const text = `Lecture hall ${lectureHall.name} has been booked ${from} until ${to}. The booking span ${classDuration} hours`;
+    const text = `Lecture hall ${lectureHall.name} has been booked ${bookedFrom} until ${bookedTo}. 
+                  The booking span ${classDuration} hours`;
 
     sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
 
@@ -58,3 +90,10 @@ export const BookHall = async (req: Request, res: Response) => {
     res.json(error);
   }
 };
+
+// if i book a hall at around Wed 2pm to 4pm and ttodays date is Wed 1pm
+// stat is 2pm
+// stop is 4pm - same day
+// if start is less than current date and stop is greater than current date then hall is booked
+// if start is greater than current date and stop is less than current date then hall cannot be booked
+// 2 < 13 && 4
