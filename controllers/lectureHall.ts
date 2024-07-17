@@ -70,6 +70,7 @@ export const BookHall = async (req: Request, res: Response) => {
     const newBooking = {
       bookedFrom: bookedFromDate,
       bookedTo: bookedToDate,
+      duration: classDuration,
     };
 
     await lectureHallModel.updateOne(
