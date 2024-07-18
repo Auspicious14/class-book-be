@@ -9,7 +9,7 @@ interface IFiles {
 export interface ILectureHall extends Document {
   name: string;
   location: string;
-  files: IFiles[];
+  images: IFiles[];
   bookings: IBooking[];
 }
 
@@ -17,7 +17,7 @@ const LectureHallSchema: Schema = new Schema({
   name: { type: String, required: true },
   location: { type: String, required: true },
   bookings: { type: [BookingSchema], default: [] },
-  files: [
+  images: [
     { uri: { type: String }, name: { type: String }, type: { type: String } },
   ],
 });

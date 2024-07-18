@@ -11,16 +11,11 @@ export const createNewHall = async (req: Request, res: Response) => {
     const fls = await mapFiles(files);
     if (!fls) res.json({ message: "Error uploading image" });
 
-    const lectureHall = new lectureHallModel({ name, location, files: fls });
+    const lectureHall = new lectureHallModel({ name, location, images: fls });
     await lectureHall.save();
     res.json({
       message: "Lecture hall created successfully",
-      data: {
-        _id: lectureHall._id,
-        name: lectureHall.name,
-        location: lectureHall.location,
-        images: lectureHall.files,
-      },
+      data: lectureHall,
     });
   } catch (error) {
     res.json(error);
