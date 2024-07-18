@@ -2,12 +2,16 @@ import express, { Request, Response } from "express";
 import { userModel } from "../models/user";
 import { lectureHallModel } from "../models/lectureHall";
 import { sendEmail } from "../middlewares/email";
+import { mapFiles } from "../middlewares/uploadImage";
 
 export const createNewHall = async (req: Request, res: Response) => {
-  const { name, location } = req.body;
-  const lectureHall = new lectureHallModel({ name, location });
+  const { name, location, files } = req.body;
 
   try {
+    const fls = await mapFiles(files);
+    if (!fls) res.json({ message: "Error uploading image" });
+
+    const lectureHall = new lectureHallModel({ name, location, files: fls });
     await lectureHall.save();
     res.json({
       message: "Lecture hall created successfully",
@@ -15,6 +19,7 @@ export const createNewHall = async (req: Request, res: Response) => {
         _id: lectureHall._id,
         name: lectureHall.name,
         location: lectureHall.location,
+        images: lectureHall.files,
       },
     });
   } catch (error) {
