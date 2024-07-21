@@ -16,8 +16,35 @@ export const createNewHall = async (req: Request, res: Response) => {
     const lectureHall = new lectureHallModel({ name, location, images: fls });
     await lectureHallModel.syncIndexes();
     await lectureHall.save();
+
     res.json({
       message: "Lecture hall created successfully",
+      data: lectureHall,
+    });
+  } catch (error) {
+    res.json(error);
+  }
+};
+
+export const updateHall = async (req: Request, res: Response) => {
+  const { _id, name, location, files } = req.body;
+
+  try {
+    const existingHall = await lectureHallModel.findById(_id);
+    if (!existingHall) res.json({ message: "Lecture Hall does not exists" });
+
+    const fls = await mapFiles(files);
+    if (!fls) res.json({ message: "Error uploading image" });
+
+    const lectureHall = await lectureHallModel.findOneAndUpdate(
+      { _id },
+      { name, location, images: fls },
+      { new: true }
+    );
+    await lectureHallModel.syncIndexes();
+
+    res.json({
+      message: "Lecture hall updated successfully",
       data: lectureHall,
     });
   } catch (error) {
@@ -89,7 +116,7 @@ export const BookHall = async (req: Request, res: Response) => {
 
     sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
 
-    res.json({ message: "Lecture hall booked and students notified" });
+    res.json({ message: "Lecture hall booked and students notified", text });
   } catch (error) {
     res.json(error);
   }
