@@ -6,12 +6,16 @@ import { mapFiles } from "../middlewares/uploadImage";
 
 export const createNewHall = async (req: Request, res: Response) => {
   const { name, location, files } = req.body;
-
   try {
+    const existingHall = await lectureHallModel.findOne({ name, location });
+    console.log(existingHall, "existing hall");
+    if (existingHall) res.json({ message: "Lecture Hall already exists" });
+
     const fls = await mapFiles(files);
     if (!fls) res.json({ message: "Error uploading image" });
 
     const lectureHall = new lectureHallModel({ name, location, images: fls });
+    await lectureHallModel.syncIndexes();
     await lectureHall.save();
     res.json({
       message: "Lecture hall created successfully",

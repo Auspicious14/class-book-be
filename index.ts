@@ -5,9 +5,12 @@ import hallRouter from "./routes/hall";
 import cors from "cors";
 import express, { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
 export const appRoute = express();
 
 appRoute.use(cors());
+appRoute.use(bodyParser.json());
+appRoute.use(bodyParser.urlencoded({ extended: true }));
 appRoute.use((req: Request, res: Response, next: NextFunction) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(

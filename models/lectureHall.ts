@@ -13,14 +13,17 @@ export interface ILectureHall extends Document {
   bookings: IBooking[];
 }
 
-const LectureHallSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  location: { type: String, required: true },
-  bookings: { type: [BookingSchema], default: [] },
-  images: [
-    { uri: { type: String }, name: { type: String }, type: { type: String } },
-  ],
-});
+const LectureHallSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true, unique: false },
+    location: { type: String, required: true },
+    bookings: { type: [BookingSchema], default: [] },
+    images: [
+      { uri: { type: String }, name: { type: String }, type: { type: String } },
+    ],
+  },
+  { timestamps: true }
+);
 
 export const lectureHallModel = mongoose.model<ILectureHall>(
   "LectureHall",
