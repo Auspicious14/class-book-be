@@ -5,7 +5,7 @@ import { sendEmail } from "../middlewares/email";
 import { mapFiles } from "../middlewares/uploadImage";
 
 export const createNewHall = async (req: Request, res: Response) => {
-  const { name, location, files } = req.body;
+  const { name, location, capacity, available, files } = req.body;
   try {
     const existingHall = await lectureHallModel.findOne({ name, location });
     if (existingHall) res.json({ message: "Lecture Hall already exists" });
@@ -13,7 +13,13 @@ export const createNewHall = async (req: Request, res: Response) => {
     const fls = await mapFiles(files);
     if (!fls) res.json({ message: "Error uploading image" });
 
-    const lectureHall = new lectureHallModel({ name, location, images: fls });
+    const lectureHall = new lectureHallModel({
+      name,
+      location,
+      capacity,
+      available,
+      images: fls,
+    });
     await lectureHallModel.syncIndexes();
     await lectureHall.save();
 
@@ -27,7 +33,7 @@ export const createNewHall = async (req: Request, res: Response) => {
 };
 
 export const updateHall = async (req: Request, res: Response) => {
-  const { _id, name, location, files } = req.body;
+  const { _id, name, location, capacity, available, files } = req.body;
 
   try {
     const existingHall = await lectureHallModel.findById(_id);
@@ -38,7 +44,7 @@ export const updateHall = async (req: Request, res: Response) => {
 
     const lectureHall = await lectureHallModel.findOneAndUpdate(
       { _id },
-      { name, location, images: fls },
+      { name, location, capacity, available, images: fls },
       { new: true }
     );
     await lectureHallModel.syncIndexes();
