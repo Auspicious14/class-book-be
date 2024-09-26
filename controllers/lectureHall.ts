@@ -5,7 +5,7 @@ import { sendEmail } from "../middlewares/email";
 import { mapFiles } from "../middlewares/uploadImage";
 
 export const createNewHall = async (req: Request, res: Response) => {
-  const { name, location, capacity, available, files } = req.body;
+  const { name, location, capacity, description, available, files } = req.body;
   try {
     const existingHall = await lectureHallModel.findOne({ name, location });
     if (existingHall) res.json({ message: "Lecture Hall already exists" });
@@ -15,6 +15,7 @@ export const createNewHall = async (req: Request, res: Response) => {
 
     const lectureHall = new lectureHallModel({
       name,
+      description,
       location,
       capacity,
       available,
@@ -33,8 +34,9 @@ export const createNewHall = async (req: Request, res: Response) => {
 };
 
 export const updateHall = async (req: Request, res: Response) => {
-  const { _id, name, location, capacity, available, files } = req.body;
-
+  const { _id, name, location, capacity, description, available, files } =
+    req.body;
+  console.log(req.body, "body");
   try {
     const existingHall = await lectureHallModel.findById(_id);
     if (!existingHall) res.json({ message: "Lecture Hall does not exists" });
@@ -44,7 +46,7 @@ export const updateHall = async (req: Request, res: Response) => {
 
     const lectureHall = await lectureHallModel.findOneAndUpdate(
       { _id },
-      { name, location, capacity, available, images: fls },
+      { name, description, location, capacity, available, images: fls },
       { new: true }
     );
     await lectureHallModel.syncIndexes();

@@ -8,6 +8,7 @@ interface IFiles {
 }
 export interface ILectureHall extends Document {
   name: string;
+  description: string;
   location: string;
   capacity: string;
   available: boolean;
@@ -18,6 +19,7 @@ export interface ILectureHall extends Document {
 const LectureHallSchema: Schema = new Schema(
   {
     name: { type: String, required: true, unique: false },
+    description: { type: String },
     location: { type: String, required: true },
     cpacity: { type: String, required: true },
     available: { type: Boolean, default: false },
