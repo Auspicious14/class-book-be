@@ -36,7 +36,6 @@ export const createNewHall = async (req: Request, res: Response) => {
 export const updateHall = async (req: Request, res: Response) => {
   const { _id, name, location, capacity, description, available, files } =
     req.body;
-  console.log(req.body, "body");
   try {
     const existingHall = await lectureHallModel.findById(_id);
     if (!existingHall) res.json({ message: "Lecture Hall does not exists" });
