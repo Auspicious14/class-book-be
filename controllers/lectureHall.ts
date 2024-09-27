@@ -3,6 +3,9 @@ import { userModel } from "../models/user";
 import { lectureHallModel } from "../models/lectureHall";
 import { sendEmail } from "../middlewares/email";
 import { mapFiles } from "../middlewares/uploadImage";
+import jwt from "jsonwebtoken";
+
+const jwtSecret = process.env.JWT_SECRET;
 
 export const createNewHall = async (req: Request, res: Response) => {
   const { name, location, capacity, description, available, files } = req.body;
@@ -18,7 +21,7 @@ export const createNewHall = async (req: Request, res: Response) => {
       description,
       location,
       capacity,
-      available,
+      available: true,
       images: fls,
     });
     await lectureHallModel.syncIndexes();
@@ -66,22 +69,30 @@ export const getAllHalls = async (req: Request, res: Response) => {
 
 export const BookHall = async (req: Request, res: Response) => {
   const { hallId, duration, bookedTo, bookedFrom } = req.body;
-  const classDuration = new Date(duration).getHours();
-
-  const bookedFromDate = new Date(bookedFrom);
-  const bookedToDate = new Date(bookedTo);
-
-  if (bookedFromDate < new Date()) {
-    return res.json({ message: "Booking start time must be in the future" });
-  }
-
-  if (bookedToDate <= bookedFromDate) {
-    return res.json({
-      message: "Booking end time must be after the start time",
-    });
-  }
+  // console.log(bookedFrom, bookedTo);
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+  if (!token) return res.status(401).send("Access Denied. No token provided.");
 
   try {
+    const verifyAuth: any = jwt.verify(token, jwtSecret as string);
+    if (!verifyAuth) res.json({ messaage: "Access Denied. Unauthenticated." });
+
+    const authorizedUser = await userModel.findById(verifyAuth?._id);
+    if (!authorizedUser) res.json({ messaage: "Unauthorised" });
+
+    const bookedFromDate = new Date(bookedFrom).toISOString();
+    const bookedToDate = new Date(bookedTo).toISOString();
+
+    if (bookedFromDate < new Date().toISOString()) {
+      return res.json({ message: "Booking start time must be in the future" });
+    }
+
+    if (bookedToDate <= bookedFromDate) {
+      return res.json({
+        message: "Booking end time must be after the start time",
+      });
+    }
+
     const lectureHall = await lectureHallModel.findById(hallId);
 
     if (!lectureHall) {
@@ -107,19 +118,24 @@ export const BookHall = async (req: Request, res: Response) => {
     const newBooking = {
       bookedFrom: bookedFromDate,
       bookedTo: bookedToDate,
-      duration: classDuration,
+      duration,
+      bookedBy: authorizedUser?._id,
     };
 
-    await lectureHallModel.updateOne(
-      { _id: hallId },
-      { $push: { bookings: newBooking } }
+    await lectureHallModel.findByIdAndUpdate(
+      hallId,
+      {
+        $push: { bookings: newBooking },
+        $set: { available: false },
+      },
+      { new: true }
     );
 
     const users = await userModel.find();
     const usersEmail = users.map((user) => user.email);
 
     const text = `Lecture hall ${lectureHall.name} has been booked ${bookedFrom} until ${bookedTo}. 
-                  The booking span ${classDuration} hours`;
+                  The booking span ${duration} hours`;
 
     sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
 
