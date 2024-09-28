@@ -63,8 +63,18 @@ export const updateHall = async (req: Request, res: Response) => {
 };
 
 export const getAllHalls = async (req: Request, res: Response) => {
-  const lectureHalls = await lectureHallModel.find();
-  res.json({ data: lectureHalls });
+  const { name, available } = req.query;
+  try {
+    let query: any = {};
+
+    if (name) query.name = { $regex: name, $options: "i" };
+    if (available) query.available = available;
+
+    const lectureHalls = await lectureHallModel.find(query);
+    res.json({ data: lectureHalls });
+  } catch (error) {
+    res.json({ error });
+  }
 };
 
 export const BookHall = async (req: Request, res: Response) => {
