@@ -145,6 +145,32 @@ export const BookHall = async (req: Request, res: Response) => {
   }
 };
 
+export const checkAllHallsAvailability = async () => {
+  try {
+    const halls = await lectureHallModel.find();
+
+    for (const hall of halls) {
+      const lastBooking = hall.bookings[hall.bookings.length - 1];
+
+      if (lastBooking && new Date(lastBooking.bookedTo) < new Date()) {
+        if (!hall.available) {
+          hall.available = true;
+          await hall.save();
+          console.log(`Updated availability for hall: ${hall.name}`);
+        }
+      } else {
+        if (hall.available) {
+          hall.available = false;
+          await hall.save();
+          console.log(`Updated unavailability for hall: ${hall.name}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error checking and updating hall availability:", error);
+  }
+};
+
 // if i book a hall at around Wed 2pm to 4pm and ttodays date is Wed 1pm
 // stat is 2pm
 // stop is 4pm - same day

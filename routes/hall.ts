@@ -1,6 +1,7 @@
 import express from "express";
 import {
   BookHall,
+  checkAllHallsAvailability,
   createNewHall,
   getAllHalls,
   updateHall,
@@ -11,6 +12,7 @@ const router = express.Router();
 router.post("/create/hall", authenticate, authorize(["admin"]), createNewHall);
 router.put("/update/hall", authenticate, authorize(["admin"]), updateHall);
 router.get("/halls", authenticate, getAllHalls);
+router.get("/halls/availability", authenticate, checkAllHallsAvailability);
 router.post(
   "/book/hall",
   authenticate,
@@ -19,3 +21,10 @@ router.post(
 );
 
 export default router;
+
+const cron = require("node-cron");
+
+cron.schedule("*/10 * * * *", async () => {
+  console.log("Checking and updating hall availability...");
+  await checkAllHallsAvailability();
+});

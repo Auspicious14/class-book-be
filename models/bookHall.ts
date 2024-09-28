@@ -2,9 +2,9 @@ import mongoose, { Schema, Types } from "mongoose";
 import { ILectureHall } from "./lectureHall";
 
 export interface IBooking extends ILectureHall {
-  bookedFrom: Date | null;
-  bookedTo: Date | null;
-  duration: string | null;
+  bookedFrom: Date;
+  bookedTo: Date;
+  duration: string;
 }
 
 export const BookingSchema: Schema = new Schema({
