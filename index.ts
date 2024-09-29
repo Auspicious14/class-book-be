@@ -7,7 +7,8 @@ import express, { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 export const appRoute = express();
-
+import { ProfileRouter } from "./routes/profile";
+const profileRouter = new ProfileRouter();
 appRoute.use(cors());
 appRoute.use(bodyParser.json());
 appRoute.use(bodyParser.urlencoded({ extended: true }));
@@ -25,3 +26,4 @@ appRoute.use(cookieParser());
 // appRoute.use(express.json());
 appRoute.use("/auth", authRouter);
 appRoute.use(hallRouter);
+appRoute.use(profileRouter.router);
