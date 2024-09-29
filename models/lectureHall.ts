@@ -20,8 +20,8 @@ const LectureHallSchema: Schema = new Schema(
   {
     name: { type: String, required: true, unique: false },
     description: { type: String },
-    location: { type: String, required: true },
-    capacity: { type: String, required: true },
+    location: { type: String, required: false },
+    capacity: { type: String, required: false },
     available: { type: Boolean, default: true },
     bookings: { type: [BookingSchema], default: [] },
     images: [

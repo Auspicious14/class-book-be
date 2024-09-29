@@ -32,7 +32,7 @@ export const createNewHall = async (req: Request, res: Response) => {
       data: lectureHall,
     });
   } catch (error) {
-    res.json(error);
+    res.json({ success: false, error });
   }
 };
 
@@ -58,7 +58,7 @@ export const updateHall = async (req: Request, res: Response) => {
       data: lectureHall,
     });
   } catch (error) {
-    res.json(error);
+    res.json({ success: false, error });
   }
 };
 
@@ -73,13 +73,12 @@ export const getAllHalls = async (req: Request, res: Response) => {
     const lectureHalls = await lectureHallModel.find(query);
     res.json({ data: lectureHalls });
   } catch (error) {
-    res.json({ error });
+    res.json({ success: false, error });
   }
 };
 
 export const BookHall = async (req: Request, res: Response) => {
   const { hallId, duration, bookedTo, bookedFrom } = req.body;
-  // console.log(bookedFrom, bookedTo);
   const token = req.header("Authorization")?.replace("Bearer ", "");
   if (!token) return res.status(401).send("Access Denied. No token provided.");
 
@@ -88,7 +87,7 @@ export const BookHall = async (req: Request, res: Response) => {
     if (!verifyAuth) res.json({ messaage: "Access Denied. Unauthenticated." });
 
     const authorizedUser = await userModel.findById(verifyAuth?._id);
-    if (!authorizedUser) res.json({ messaage: "Unauthorised" });
+    if (!authorizedUser) res.json({ success: false, messaage: "Unauthorised" });
 
     const bookedFromDate = new Date(bookedFrom).toISOString();
     const bookedToDate = new Date(bookedTo).toISOString();
@@ -106,7 +105,9 @@ export const BookHall = async (req: Request, res: Response) => {
     const lectureHall = await lectureHallModel.findById(hallId);
 
     if (!lectureHall) {
-      return res.status(404).json("Lecture hall not found");
+      return res
+        .status(404)
+        .json({ success: false, error: "Lecture hall not found" });
     }
 
     const overlappingBooking = await lectureHallModel.findOne({
@@ -122,7 +123,10 @@ export const BookHall = async (req: Request, res: Response) => {
     if (overlappingBooking) {
       return res
         .status(400)
-        .json("Lecture hall is already booked for the requested time");
+        .json({
+          success: false,
+          error: "Lecture hall is already booked for the requested time",
+        });
     }
 
     const newBooking = {
@@ -149,9 +153,13 @@ export const BookHall = async (req: Request, res: Response) => {
 
     sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
 
-    res.json({ message: "Lecture hall booked and students notified", text });
+    res.json({
+      success: true,
+      message: "Lecture hall booked and students notified",
+      text,
+    });
   } catch (error) {
-    res.json(error);
+    res.json({ success: false, error });
   }
 };
 
