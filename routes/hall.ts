@@ -1,4 +1,5 @@
 import express from "express";
+import cron from "node-cron";
 import {
   BookHall,
   checkAllHallsAvailability,
@@ -21,8 +22,6 @@ router.post(
 );
 
 export default router;
-
-const cron = require("node-cron");
 
 cron.schedule("*/10 * * * *", async () => {
   console.log("Checking and updating hall availability...");
