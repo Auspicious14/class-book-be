@@ -1,21 +1,30 @@
 import { Request, Response } from "express";
 import { userModel } from "../models/user";
 import axios from "axios";
-// import fnpmetch from "node-fetch";
+import jwt from "jsonwebtoken";
 
+const jwtSecret = process.env.JWT_SECRET;
 const notificationApiUrl = process.env.EXPO_NOTIFICATION_API_URL || "";
 
 export const addNotificationTokenToUser = async (
   req: Request,
   res: Response
 ) => {
-  const { userId, pushToken } = req.body;
+  const { pushToken } = req.body;
 
   try {
-    if (!userId) return res.json({ success: false, message: "Bad User Input" });
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) return res.status(401).json("Access Denied. Unauthenticated.");
+
+    const verifyAuth: any = jwt.verify(token, jwtSecret as string);
+    if (!verifyAuth) res.json({ messaage: "Access Denied. Unauthenticated." });
 
     const user = await userModel
-      .findByIdAndUpdate(userId, { $set: { pushToken } }, { new: true })
+      .findByIdAndUpdate(
+        verifyAuth?._id,
+        { $set: { pushToken } },
+        { new: true }
+      )
       .select("-password");
 
     if (!user) return res.json({ success: false, message: "No user found" });

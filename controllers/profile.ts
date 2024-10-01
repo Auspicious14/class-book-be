@@ -10,7 +10,7 @@ export const getProfile = async (
   next: NextFunction
 ) => {
   const token = req.header("Authorization")?.replace("Bearer ", "");
-  if (!token) return res.status(401).json("Access Denied. No token provided.");
+  if (!token) return res.status(401).json("Access Denied. Unauthenticated.");
 
   try {
     const verifyAuth: any = jwt.verify(token, jwtSecret as string);
