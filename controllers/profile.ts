@@ -16,7 +16,9 @@ export const getProfile = async (
     const verifyAuth: any = jwt.verify(token, jwtSecret as string);
     if (!verifyAuth) res.json({ messaage: "Access Denied. Unauthenticated." });
 
-    const profile = await userModel.findById(verifyAuth._id);
+    const profile = await userModel
+      .findById(verifyAuth._id)
+      .select("-password");
     res.json({ success: true, data: profile });
   } catch (error) {
     res.json({ success: false, error });

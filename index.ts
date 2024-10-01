@@ -8,7 +8,10 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 export const appRoute = express();
 import { ProfileRouter } from "./routes/profile";
+import { NotificationRouter } from "./routes/notification";
 const profileRouter = new ProfileRouter();
+const notificationRouter = new NotificationRouter();
+
 appRoute.use(cors());
 appRoute.use(bodyParser.json());
 appRoute.use(bodyParser.urlencoded({ extended: true }));
@@ -27,3 +30,4 @@ appRoute.use(cookieParser());
 appRoute.use("/auth", authRouter);
 appRoute.use(hallRouter);
 appRoute.use(profileRouter.router);
+appRoute.use(notificationRouter.router);
