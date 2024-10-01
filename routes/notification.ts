@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { helper } from "../helper";
-import { addNotificationToken } from "../controllers/notifiication";
+import { addNotificationTokenToUser } from "../controllers/notification";
 
 export class NotificationRouter {
   private helperSvc: helper;
@@ -13,9 +13,9 @@ export class NotificationRouter {
   }
 
   private initRoute() {
-    this.router.get(
+    this.router.put(
       "/notification/save-token",
-      this.helperSvc.routeHandler(addNotificationToken as any)
+      this.helperSvc.routeHandler(addNotificationTokenToUser as any)
     );
   }
 }

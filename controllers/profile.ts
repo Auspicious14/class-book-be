@@ -18,7 +18,7 @@ export const getProfile = async (
 
     const profile = await userModel
       .findById(verifyAuth._id)
-      .select("-password");
+      .select("-password -pushToken");
     res.json({ success: true, data: profile });
   } catch (error) {
     res.json({ success: false, error });

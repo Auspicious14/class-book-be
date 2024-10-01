@@ -4,6 +4,7 @@ import { lectureHallModel } from "../models/lectureHall";
 import { sendEmail } from "../middlewares/email";
 import { mapFiles } from "../middlewares/uploadImage";
 import jwt from "jsonwebtoken";
+import { bookingNotification } from "./notification";
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -121,12 +122,10 @@ export const BookHall = async (req: Request, res: Response) => {
     });
 
     if (overlappingBooking) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Lecture hall is already booked for the requested time",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Lecture hall is already booked for the requested time",
+      });
     }
 
     const newBooking = {
@@ -152,7 +151,7 @@ export const BookHall = async (req: Request, res: Response) => {
                   The booking span ${duration} hours`;
 
     sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
-
+    await bookingNotification(lectureHall.name);
     res.json({
       success: true,
       message: "Lecture hall booked and students notified",
