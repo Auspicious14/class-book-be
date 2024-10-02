@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import authRouter from "./routes/auth";
-import hallRouter from "./routes/hall";
+import { HallRouter } from "./routes/hall";
 import cors from "cors";
 import express, { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
@@ -11,6 +11,7 @@ import { ProfileRouter } from "./routes/profile";
 import { NotificationRouter } from "./routes/notification";
 const profileRouter = new ProfileRouter();
 const notificationRouter = new NotificationRouter();
+const hallRouter = new HallRouter();
 
 appRoute.use(cors());
 appRoute.use(bodyParser.json());
@@ -28,6 +29,6 @@ appRoute.use(express.urlencoded({ limit: "50mb", extended: true }));
 appRoute.use(cookieParser());
 // appRoute.use(express.json());
 appRoute.use("/auth", authRouter);
-appRoute.use(hallRouter);
+appRoute.use(hallRouter.router);
 appRoute.use(profileRouter.router);
 appRoute.use(notificationRouter.router);

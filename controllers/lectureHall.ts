@@ -78,6 +78,26 @@ export const getAllHalls = async (req: Request, res: Response) => {
   }
 };
 
+export const getOneHall = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    if (!id || id == "")
+      res.json({ success: false, message: "Bad User Input" });
+
+    const hall = await lectureHallModel.findById(id);
+    if (!hall)
+      return res.json({
+        success: false,
+        message: "Lecture Hall does not exist",
+      });
+
+    res.json({ success: true, data: hall });
+  } catch (error) {
+    res.json({ success: false, error });
+  }
+};
+
 export const BookHall = async (req: Request, res: Response) => {
   const { hallId, duration, bookedTo, bookedFrom } = req.body;
   const token = req.header("Authorization")?.replace("Bearer ", "");
