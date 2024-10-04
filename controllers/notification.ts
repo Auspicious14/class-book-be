@@ -1,4 +1,7 @@
 import { Request, Response } from "express";
+import dotenv from "dotenv";
+dotenv.config();
+
 import { userModel } from "../models/user";
 import axios from "axios";
 import jwt from "jsonwebtoken";
@@ -42,7 +45,6 @@ export const bookingNotification = async (hallName: string) => {
       .select("firstName lastName pushToken");
 
     if (!users.length) {
-      console.log("No users found with push tokens.");
       return;
     }
 
@@ -71,18 +73,19 @@ const sendPushNotification = async (pushToken: string, hallName: string) => {
       data: JSON.stringify(message),
     });
 
-    const responseData: any = await response.data;
+    // console.log("Response from Expo:", response.data);
 
-    if (response.statusText != "ok" || responseData.error) {
-      throw new Error(responseData.error || "Notification failed");
+    if (response.status !== 200 || response.data.errors) {
+      throw new Error(
+        response.data.errors
+          ? response.data.errors[0].message
+          : "Notification failed"
+      );
     }
 
-    console.log(`Notification sent successfully to ${pushToken}`);
+    console.log(`Notification sent successfully`);
   } catch (error: any) {
-    console.error(
-      `Failed to send notification to ${pushToken}:`,
-      error.message
-    );
+    console.error(`Failed to send notification:`, error.message);
 
     if (
       error.message.includes("DeviceNotRegistered") ||
@@ -116,7 +119,7 @@ export const sendBatchNotifications = async (
 const handleInvalidToken = async (pushToken: string) => {
   try {
     await userModel.updateOne({ pushToken }, { $unset: { pushToken: "" } });
-    console.log(`Invalid push token removed: ${pushToken}`);
+    console.log(`Invalid push token removed`);
   } catch (error: any) {
     console.error("Error removing invalid push token:", error.message);
   }
