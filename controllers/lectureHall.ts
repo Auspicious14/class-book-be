@@ -167,11 +167,22 @@ export const BookHall = async (req: Request, res: Response) => {
     const users = await userModel.find();
     const usersEmail = users.map((user) => user.email);
 
-    const text = `Lecture hall ${lectureHall.name} has been booked ${bookedFrom} until ${bookedTo}. 
+    const text = `Lecture hall ${lectureHall.name}, has been booked by ${authorizedUser?.firstName} from ${bookedFrom} until ${bookedTo}. 
                   The booking span ${duration} hours`;
 
-    sendEmail(usersEmail, "Lecture Booked", JSON.stringify(text));
-    await bookingNotification(lectureHall.name);
+    const sentMail = sendEmail(
+      usersEmail,
+      "Lecture Booked",
+      JSON.stringify(text)
+    );
+    console.log({ sentMail });
+    await bookingNotification(
+      lectureHall.name,
+      authorizedUser?.firstName as string,
+      bookedFrom,
+      bookedTo,
+      duration
+    );
     res.json({
       success: true,
       message: "Lecture hall booked and students notified",

@@ -11,7 +11,7 @@ export const signUp = async (req: Request, res: Response) => {
   try {
     const existingUser = await userModel.findOne({ email });
 
-    if (existingUser) res.json({ message: "User already exists" });
+    if (existingUser) res.status(409).json({ message: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new userModel({
@@ -22,40 +22,45 @@ export const signUp = async (req: Request, res: Response) => {
       role,
     });
     await user.save();
-    res.json({ message: "Registered successfully" });
+    res.status(200).json({ message: "Registered successfully" });
   } catch (error) {
-    res.json(error);
+    res.status(500).json(error);
   }
 };
 
 export const Login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-  const user = await userModel.findOne({ email });
 
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.json({ message: "Invalid email or password" });
+  try {
+    const user = await userModel.findOne({ email });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const token = jwt.sign(
+      {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      process.env.JWT_SECRET!
+    );
+    res.status(200).json({
+      data: {
+        _id: user?._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user?.email,
+        role: user?.role,
+      },
+      token,
+      message: "Login successully",
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error });
   }
-
-  const token = jwt.sign(
-    {
-      _id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-    },
-    process.env.JWT_SECRET!
-  );
-  res.json({
-    data: {
-      _id: user?._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user?.email,
-      role: user?.role,
-    },
-    token,
-    message: "Login successully",
-  });
 };
 
 export const forgetPassword = async (req: Request, res: Response) => {
@@ -88,7 +93,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
   try {
     const user: any = await userModel.findOne({ email });
     if (!user)
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: "Account not found",
       });
@@ -96,21 +101,21 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const expiryDate = otpDate + 60 * 60 * 1000;
 
     if (otp !== userOtp)
-      return res.json({
+      return res.status(401).json({
         success: false,
         message: "Incorrect OTP",
       });
 
     if (expiryDate < Date.now())
-      return res.json({
+      return res.status(409).json({
         success: false,
         message: "OTP expired",
       });
-    res.json({
+    res.status(200).json({
       verified: true,
     });
   } catch (error) {
-    res.json({ error });
+    res.status(500).json({ error });
   }
 };
 
@@ -120,7 +125,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const user: any = await userModel.findOne({ email });
     if (!user)
-      return res.json({
+      return res.status(404).json({
         success: false,
         message: "Account not found",
       });
@@ -129,18 +134,18 @@ export const resetPassword = async (req: Request, res: Response) => {
     const comparePassword = await bcrypt.compare(oldPassword, newPassword);
 
     if (comparePassword)
-      return res.json({
+      return res.status(409).json({
         success: false,
         message: "You entered your old password",
       });
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Password successfully changed.",
     });
   } catch (error) {
-    res.json({ error });
+    res.status(500).json({ error });
   }
 };

@@ -38,7 +38,13 @@ export const addNotificationTokenToUser = async (
   }
 };
 
-export const bookingNotification = async (hallName: string) => {
+export const bookingNotification = async (
+  hallName: string,
+  bookedBy: string,
+  bookedFrom: string,
+  bookedTo: string,
+  duration: string
+) => {
   try {
     const users = await userModel
       .find({ pushToken: { $exists: true } })
@@ -48,19 +54,35 @@ export const bookingNotification = async (hallName: string) => {
       return;
     }
 
-    await sendBatchNotifications(users, hallName);
+    await sendBatchNotifications(
+      users,
+      hallName,
+      bookedBy,
+      bookedFrom,
+      bookedTo,
+      duration
+    );
   } catch (error: any) {
     console.error("Error sending notifications to users:", error.message);
   }
 };
 
-const sendPushNotification = async (pushToken: string, hallName: string) => {
+const sendPushNotification = async (
+  pushToken: string,
+  hallName: string,
+  bookedBy: string,
+  bookedFrom: string,
+  bookedTo: string,
+  duration: string
+) => {
   try {
     const message = {
       to: pushToken,
       sound: "default",
       title: "Hall Booked!",
-      body: `${hallName} has just been booked`,
+      body: `${hallName} has just been booked by ${bookedBy}`,
+      data: `Lecture hall ${hallName}, has been booked by ${bookedBy} 
+              from ${bookedFrom} until ${bookedTo}. The booking span ${duration} hours`,
     };
 
     const response = await axios(notificationApiUrl, {
@@ -98,7 +120,11 @@ const sendPushNotification = async (pushToken: string, hallName: string) => {
 
 export const sendBatchNotifications = async (
   users: any[],
-  hallName: string
+  hallName: string,
+  bookedBy: string,
+  bookedFrom: string,
+  bookedTo: string,
+  duration: string
 ) => {
   const MAX_BATCH_SIZE = 100;
   let batches = [];
@@ -110,7 +136,14 @@ export const sendBatchNotifications = async (
 
   for (const batch of batches) {
     const notifications = batch.map((user) =>
-      sendPushNotification(user.pushToken, hallName)
+      sendPushNotification(
+        user.pushToken,
+        hallName,
+        bookedBy,
+        bookedFrom,
+        bookedTo,
+        duration
+      )
     );
     await Promise.all(notifications);
   }
