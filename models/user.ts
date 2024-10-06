@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "student" | "classRep" | "admin";
+  pushToken: string;
 }
 
 const UserSchema: Schema = new Schema(

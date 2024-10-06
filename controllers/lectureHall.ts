@@ -170,12 +170,12 @@ export const BookHall = async (req: Request, res: Response) => {
     const text = `Lecture hall ${lectureHall.name}, has been booked by ${authorizedUser?.firstName} from ${bookedFrom} until ${bookedTo}. 
                   The booking span ${duration} hours`;
 
-    const sentMail = sendEmail(
+    const sentMail = await sendEmail(
       usersEmail,
       "Lecture Booked",
       JSON.stringify(text)
     );
-    console.log({ sentMail });
+    // console.log({ sentMail });
     await bookingNotification(
       lectureHall.name,
       authorizedUser?.firstName as string,
