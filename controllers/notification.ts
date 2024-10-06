@@ -5,7 +5,7 @@ dotenv.config();
 import { IUser, userModel } from "../models/user";
 import axios from "axios";
 import jwt from "jsonwebtoken";
-import Expo, { ExpoPushMessage } from "expo-server-sdk";
+import { Expo, ExpoPushMessage } from "expo-server-sdk";
 
 let expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN,
