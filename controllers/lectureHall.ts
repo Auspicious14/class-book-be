@@ -5,6 +5,7 @@ import { sendEmail } from "../middlewares/email";
 import { mapFiles } from "../middlewares/uploadImage";
 import jwt from "jsonwebtoken";
 import { bookingNotification } from "./notification";
+import { formatDate } from "../middlewares/formatDate";
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -167,13 +168,109 @@ export const BookHall = async (req: Request, res: Response) => {
     const users = await userModel.find();
     const usersEmail = users.map((user) => user.email);
 
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lecture Hall Booking Confirmation</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f7f7f7; color: #2d3748;">
+      <!-- Container -->
+      <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto;">
+        
+        <!-- Header -->
+        <tr>
+          <td style="padding: 20px 0; text-align: center;">
+            <h1 style="font-size: 28px; color: #2d3748; margin: 0; font-weight: 700;">HallMate</h1>
+            <p style="font-size: 14px; color: #718096; margin: 5px 0 0;">Your Lecture Hall Booking Updates</p>
+          </td>
+        </tr>
+
+        <!-- Body Card -->
+        <tr>
+          <td style="background-color: #ffffff; border-radius: 10px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="font-size: 18px; color: #2d3748; margin: 0 0 15px; font-weight: 600;">Booking Confirmed</h2>
+            <p style="font-size: 15px; color: #718096; margin: 0 0 20px; line-height: 1.4;">
+              A lecture hall has been reserved. Here are the details:
+            </p>
+
+            <!-- Details Section -->
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                  <span style="font-size: 14px; color: #718096;">Hall</span><br>
+                  <span style="font-size: 16px; color: #2d3748; font-weight: 600;">${
+                    lectureHall.name
+                  }</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                  <span style="font-size: 14px; color: #718096;">Booked By</span><br>
+                  <span style="font-size: 16px; color: #2d3748; font-weight: 600;">${
+                    authorizedUser?.firstName
+                  } ${authorizedUser?.lastName || ""}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                  <span style="font-size: 14px; color: #718096;">Start Time</span><br>
+                  <span style="font-size: 16px; color: #2d3748; font-weight: 600;">${formatDate(
+                    bookedFrom
+                  )}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                  <span style="font-size: 14px; color: #718096;">End Time</span><br>
+                  <span style="font-size: 16px; color: #2d3748; font-weight: 600;">${formatDate(
+                    bookedTo
+                  )}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0;">
+                  <span style="font-size: 14px; color: #718096;">Duration</span><br>
+                  <span style="font-size: 16px; color: #2d3748; font-weight: 600;">${duration} hours</span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Action Button -->
+            // <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 20px;">
+            //   <tr>
+            //     <td align="center">
+            //       <a href="https://yourapp.com/halls" style="background-color: #4299e1; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; display: inline-block;">View All Halls</a>
+            //     </td>
+            //   </tr>
+            // </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding: 20px 0; text-align: center;">
+            <p style="font-size: 12px; color: #718096; margin: 0;">© ${new Date().getFullYear()} HallMate. All rights reserved.</p>
+            <p style="font-size: 12px; color: #718096; margin: 5px 0 0;">
+              Questions? <a href="mailto:support@hallmate.com" style="color: #4299e1; text-decoration: none;">Contact Support</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
     const text = `Lecture hall ${lectureHall.name}, has been booked by ${authorizedUser?.firstName} from ${bookedFrom} until ${bookedTo}. 
                   The booking span ${duration} hours`;
 
     const sentMail = await sendEmail(
       usersEmail,
-      "Lecture Booked",
-      JSON.stringify(text)
+      "Lecture Hall Booking Confirmed - HallMate",
+      JSON.stringify(text),
+      htmlContent
     );
     // console.log({ sentMail });
     await bookingNotification(

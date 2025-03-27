@@ -9,6 +9,7 @@ import bodyParser from "body-parser";
 export const appRoute = express();
 import { ProfileRouter } from "./routes/profile";
 import { NotificationRouter } from "./routes/notification";
+import { bookingNotification } from "./controllers/notification";
 const profileRouter = new ProfileRouter();
 const notificationRouter = new NotificationRouter();
 const hallRouter = new HallRouter();
@@ -32,3 +33,21 @@ appRoute.use("/auth", authRouter);
 appRoute.use(hallRouter.router);
 appRoute.use(profileRouter.router);
 appRoute.use(notificationRouter.router);
+
+// const exampleBooking = async () => {
+//   const lectureHall = "Lecture Hall B";
+//   const authorizedUser = "Smith";
+//   const bookedFrom = "2025-03-28T14:00:00";
+//   const bookedTo = "2025-03-28T16:00:00";
+//   const duration = "2";
+
+//   await bookingNotification(
+//     lectureHall,
+//     authorizedUser,
+//     bookedFrom,
+//     bookedTo,
+//     duration
+//   );
+// };
+
+// exampleBooking();

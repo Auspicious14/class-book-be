@@ -204,8 +204,12 @@ const sendBatchNotifications = async (
       return {
         to: user.pushToken,
         sound: "default" as "default",
-        title: "Hall Booked!",
-        body: `${hallName} has just been booked by ${bookedBy}`,
+        title: "Hall Booking Confirmed!",
+        body: `${hallName} has been booked by ${bookedBy} from ${new Date(
+          bookedFrom
+        ).toLocaleTimeString()} to ${new Date(
+          bookedTo
+        ).toLocaleTimeString()} (${duration} hours).`,
         data: {
           hallName,
           bookedBy,

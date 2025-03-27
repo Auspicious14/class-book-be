@@ -2,7 +2,12 @@ import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 dotenv.config();
 
-export const sendEmail = async (email: any, subject: any, text: any) => {
+export const sendEmail = async (
+  email: any,
+  subject: any,
+  text: string,
+  html?: any
+) => {
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -21,7 +26,8 @@ export const sendEmail = async (email: any, subject: any, text: any) => {
         from: `Auspicious: <${process.env.EMAIL_USERNAME}>`,
         to: email,
         subject,
-        html: text,
+        text,
+        html,
       };
     };
 
