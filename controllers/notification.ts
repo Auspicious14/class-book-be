@@ -172,6 +172,7 @@ export const bookingNotification = async (
       return;
     }
 
+    console.log("send batch noti");
     await sendBatchNotifications(
       users,
       hallName,
@@ -193,8 +194,11 @@ const sendBatchNotifications = async (
   bookedTo: string,
   duration: string
 ): Promise<void> => {
+  console.log("sending batch noti...");
+  let userId: string = "";
   const messages: ExpoPushMessage[] = users
     .map((user) => {
+      userId = user?._id as string;
       if (!Expo.isExpoPushToken(user.pushToken)) {
         console.error(
           `Push token ${user.pushToken} is not a valid Expo push token`
@@ -234,10 +238,13 @@ const sendBatchNotifications = async (
     }
   }
 
-  await handleNotificationReceipts(tickets);
+  await handleNotificationReceipts(userId, tickets);
 };
 
-const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
+const handleNotificationReceipts = async (
+  userId: string,
+  tickets: any[]
+): Promise<void> => {
   const receiptIds = tickets
     .filter((ticket) => ticket.status === "ok")
     .map((ticket) => ticket.id);
@@ -260,7 +267,7 @@ const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
               details.error === "DeviceNotRegistered" ||
               details.error === "InvalidCredentials"
             ) {
-              await handleInvalidToken(receiptId);
+              await handleInvalidToken(userId, receiptId);
             }
           }
         }
@@ -271,9 +278,15 @@ const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
   }
 };
 
-const handleInvalidToken = async (pushToken: string): Promise<void> => {
+const handleInvalidToken = async (
+  userId: string,
+  pushToken: string
+): Promise<void> => {
   try {
-    await userModel.updateOne({ pushToken }, { $unset: { pushToken: "" } });
+    await userModel.updateOne(
+      { _id: userId, pushToken },
+      { $unset: { pushToken: "" } }
+    );
     console.log(`Invalid push token removed`);
   } catch (error: any) {
     console.error("Error removing invalid push token:", error.message);
