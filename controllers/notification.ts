@@ -312,8 +312,8 @@ const sendBatchNotifications = async (
   // Schedule receipt check
   if (tickets.length && tickets.length === userIds.length) {
     console.log(`Scheduling receipt check for ${tickets.length} tickets`);
-    setTimeout(() => {
-      handleNotificationReceipts(userIds, tickets);
+    setTimeout(async () => {
+      await handleNotificationReceipts(userIds, tickets);
     }, 10000); // 10-second delay
   } else {
     console.warn(
