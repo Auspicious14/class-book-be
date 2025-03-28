@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { helper } from "../helper";
-import { addNotificationTokenToUser } from "../controllers/notification";
+import {
+  addNotificationTokenToUser,
+  handleNotificationReceipts,
+} from "../controllers/notification";
 import { authenticate } from "../middlewares/authenticate";
 
 export class NotificationRouter {
@@ -18,6 +21,10 @@ export class NotificationRouter {
       "/notification/save-token",
       authenticate,
       this.helperSvc.routeHandler(addNotificationTokenToUser as any)
+    );
+    this.router.post(
+      "/check-receipts",
+      this.helperSvc.routeHandler(handleNotificationReceipts)
     );
   }
 }
