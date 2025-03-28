@@ -5,7 +5,7 @@ dotenv.config();
 import { IUser, userModel } from "../models/user";
 import axios from "axios";
 import jwt from "jsonwebtoken";
-import { Expo, ExpoPushMessage } from "expo-server-sdk";
+import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
 
 let expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN,
@@ -185,6 +185,65 @@ export const bookingNotification = async (
   }
 };
 
+// const sendBatchNotifications = async (
+//   users: IUser[],
+//   hallName: string,
+//   bookedBy: string,
+//   bookedFrom: string,
+//   bookedTo: string,
+//   duration: string
+// ): Promise<void> => {
+//   let userId: string = "";
+//   const messages: ExpoPushMessage[] = users
+//     .map((user) => {
+//       userId = (user._id as string).toString();
+//       if (!Expo.isExpoPushToken(user.pushToken)) {
+//         console.error(
+//           `Push token ${user.pushToken} is not a valid Expo push token`
+//         );
+//         return null;
+//       }
+//       return {
+//         to: user.pushToken,
+//         sound: "default" as "default",
+//         title: "Hall Booking Confirmed!",
+//         body: `${hallName} has been booked by ${bookedBy} from ${new Date(
+//           bookedFrom
+//         ).toLocaleTimeString()} to ${new Date(
+//           bookedTo
+//         ).toLocaleTimeString()} (${duration} hours).`,
+//         data: {
+//           hallName,
+//           bookedBy,
+//           bookedFrom,
+//           bookedTo,
+//           duration,
+//         },
+//       };
+//     })
+//     .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
+
+//   const chunks = expo.chunkPushNotifications(messages);
+//   const tickets: any[] = [];
+
+//   for (let chunk of chunks) {
+//     try {
+//       const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+//       console.log("tickets", ticketChunk);
+//       tickets.push(...ticketChunk);
+//     } catch (error) {
+//       console.error(error);
+//     }
+//   }
+//   setTimeout(() => {
+//     tickets.forEach((ticket) => {
+//       if (ticket.status === "ok" && ticket.userId) {
+//         await handleNotificationReceipts(userId as string, tickets);
+//       }
+//     });
+//   }, 10000);
+
+// };
 const sendBatchNotifications = async (
   users: IUser[],
   hallName: string,
@@ -193,77 +252,117 @@ const sendBatchNotifications = async (
   bookedTo: string,
   duration: string
 ): Promise<void> => {
-  let userId: string = "";
-  const messages: ExpoPushMessage[] = users
-    .map((user) => {
-      userId = (user._id as string).toString();
-      if (!Expo.isExpoPushToken(user.pushToken)) {
-        console.error(
-          `Push token ${user.pushToken} is not a valid Expo push token`
-        );
-        return null;
-      }
-      return {
-        to: user.pushToken,
-        sound: "default" as "default",
-        title: "Hall Booking Confirmed!",
-        body: `${hallName} has been booked by ${bookedBy} from ${new Date(
-          bookedFrom
-        ).toLocaleTimeString()} to ${new Date(
-          bookedTo
-        ).toLocaleTimeString()} (${duration} hours).`,
-        data: {
-          hallName,
-          bookedBy,
-          bookedFrom,
-          bookedTo,
-          duration,
-        },
-      };
-    })
-    .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
+  console.log(
+    `Starting notification batch for ${hallName}, ${users.length} users`
+  );
 
+  const messages: ExpoPushMessage[] = [];
+  const userIds: string[] = [];
+
+  // Build messages and track userIds
+  users.forEach((user) => {
+    const userId = (user._id as string).toString();
+    if (!user.pushToken || !Expo.isExpoPushToken(user.pushToken)) {
+      console.error(
+        `Invalid or missing push token for user ${userId}: ${user.pushToken}`
+      );
+      return;
+    }
+    console.log(
+      `Preparing message for user ${userId}, token: ${user.pushToken}`
+    );
+    messages.push({
+      to: user.pushToken,
+      sound: "default" as const,
+      title: "Hall Booking Confirmed!",
+      body: `${hallName} has been booked by ${bookedBy} from ${new Date(
+        bookedFrom
+      ).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })} to ${new Date(bookedTo).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })} (${duration} hours).`,
+      data: { hallName, bookedBy, bookedFrom, bookedTo, duration },
+    });
+    userIds.push(userId);
+  });
+
+  if (!messages.length) {
+    console.warn("No valid messages to send");
+    return;
+  }
+
+  // Send notifications in chunks
   const chunks = expo.chunkPushNotifications(messages);
   const tickets: any[] = [];
 
-  for (let chunk of chunks) {
+  for (const chunk of chunks) {
     try {
+      console.log(`Sending chunk of ${chunk.length} notifications`);
       const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      console.log("tickets", ticketChunk);
+      console.log("Tickets received:", ticketChunk);
       tickets.push(...ticketChunk);
     } catch (error) {
-      console.error(error);
+      console.error("Error sending notification chunk:", error);
     }
   }
 
-  await handleNotificationReceipts(userId as string, tickets);
+  // Schedule receipt check
+  if (tickets.length && tickets.length === userIds.length) {
+    console.log(`Scheduling receipt check for ${tickets.length} tickets`);
+    setTimeout(() => {
+      handleNotificationReceipts(userIds, tickets);
+    }, 10000); // 10-second delay
+  } else {
+    console.warn(
+      `Ticket count (${tickets.length}) doesn’t match user count (${userIds.length})`
+    );
+  }
 };
 
 const handleNotificationReceipts = async (
-  userId: string,
+  userIds: string[],
   tickets: any[]
 ): Promise<void> => {
   const receiptIds = tickets
-    .filter((ticket) => ticket.status === "ok")
-    .map((ticket) => ticket.id);
-  console.log({ userId });
-  const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
-  for (let chunk of receiptIdChunks) {
-    try {
-      const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
-      console.log({ receipts });
+    .filter((ticket) => ticket.status === "ok" && ticket.id)
+    .map((ticket) => ticket.id as string);
 
-      for (let receiptId in receipts) {
-        const { status, message, details }: any = receipts[receiptId];
-        if (status === "error") {
-          console.error(
-            `There was an error sending a notification: ${message}`
+  if (!receiptIds.length) {
+    console.warn("No valid receipt IDs to check");
+    return;
+  }
+
+  console.log("Receipt IDs to check:", receiptIds);
+  console.log("Corresponding user IDs:", userIds);
+
+  const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+  for (const chunk of receiptIdChunks) {
+    try {
+      console.log(`Fetching receipts for chunk: ${chunk}`);
+      const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+      console.log("Receipts received:", receipts);
+
+      for (const receiptId in receipts) {
+        const receipt = receipts[receiptId];
+        const ticketIndex = tickets.findIndex((t) => t.id === receiptId);
+        const userId = ticketIndex !== -1 ? userIds[ticketIndex] : "unknown";
+
+        if (receipt.status === "ok") {
+          console.log(
+            `Notification delivered successfully for user ${userId}, receipt ${receiptId}`
           );
-          if (details && details.error) {
-            console.error(`The error code is ${details.error}`);
+        } else if (receipt.status === "error") {
+          console.error(
+            `Notification failed for user ${userId}, receipt ${receiptId}: ${receipt.message}`
+          );
+          if (receipt.details?.error) {
+            console.error(`Error code for ${userId}: ${receipt.details.error}`);
             if (
-              details.error === "DeviceNotRegistered" ||
-              details.error === "InvalidCredentials"
+              receipt.details.error === "DeviceNotRegistered" ||
+              receipt.details.error === "InvalidCredentials"
             ) {
               await handleInvalidToken(userId, receiptId);
             }
@@ -271,10 +370,46 @@ const handleNotificationReceipts = async (
         }
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching receipts for chunk:", error);
     }
   }
 };
+// const handleNotificationReceipts = async (
+//   userId: string,
+//   tickets: any[]
+// ): Promise<void> => {
+//   const receiptIds = tickets
+//     .filter((ticket) => ticket.status === "ok")
+//     .map((ticket) => ticket.id);
+//   console.log({ userId, receiptIds });
+//   const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+//   for (let chunk of receiptIdChunks) {
+//     try {
+//       const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+//       console.log({ receipts });
+
+//       for (let receiptId in receipts) {
+//         const { status, message, details }: any = receipts[receiptId];
+//         if (status === "error") {
+//           console.error(
+//             `There was an error sending a notification: ${message}`
+//           );
+//           if (details && details.error) {
+//             console.error(`The error code is ${details.error}`);
+//             if (
+//               details.error === "DeviceNotRegistered" ||
+//               details.error === "InvalidCredentials"
+//             ) {
+//               await handleInvalidToken(userId, receiptId);
+//             }
+//           }
+//         }
+//       }
+//     } catch (error) {
+//       console.error(error);
+//     }
+//   }
+// };
 
 const handleInvalidToken = async (
   userId: string,
@@ -290,12 +425,3 @@ const handleInvalidToken = async (
     console.error("Error removing invalid push token:", error.message);
   }
 };
-
-// const handleInvalidToken = async (pushToken: string) => {
-//   try {
-//     await userModel.updateOne({ pushToken }, { $unset: { pushToken: "" } });
-//     console.log(`Invalid push token removed`);
-//   } catch (error: any) {
-//     console.error("Error removing invalid push token:", error.message);
-//   }
-// };
