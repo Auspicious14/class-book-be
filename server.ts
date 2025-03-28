@@ -9,9 +9,11 @@ const port = process.env.PORT || 5000;
 const URI: any = process.env.MONGODB_URL;
 mongoose
   .connect(URI)
-  .then(() =>
-    app.listen(port, () => console.log(`server is listening on port ${port}`))
-  )
+  .then(() => {
+    app.listen(port, () => console.log(`server is listening on port ${port}`));
+  })
   .catch((err: any) => console.log(err));
 
 app.use(appRoute);
+
+export default app;
