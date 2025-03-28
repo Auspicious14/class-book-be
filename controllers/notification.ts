@@ -1,12 +1,12 @@
-import { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import dotenv from "dotenv";
 dotenv.config();
-
 import { IUser, userModel } from "../models/user";
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
 
+const router = Router();
 let expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN,
   useFcmV1: true,
@@ -344,62 +344,66 @@ const sendBatchNotifications = async (
   return { userIds, tickets };
 };
 
-export const handleNotificationReceipts = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+router.post("/check-receipts", async (req, res) => {
   const { userIds, tickets } = req.body;
-  console.log("Receipts received for user IDs:", userIds);
-  console.log("Corresponding tickets:", tickets);
+  console.log("Receipt check endpoint hit");
+  try {
+    const receiptIds = tickets
+      .filter((ticket: any) => ticket.status === "ok" && ticket.id)
+      .map((ticket: any) => ticket.id as string);
 
-  const receiptIds = tickets
-    .filter((ticket: any) => ticket.status === "ok" && ticket.id)
-    .map((ticket: any) => ticket.id as string);
+    if (!receiptIds.length) {
+      console.warn("No valid receipt IDs to check");
+      return res.status(200).json({ message: "No receipts to check" });
+    }
 
-  if (!receiptIds.length) {
-    console.warn("No valid receipt IDs to check");
-    return;
-  }
+    console.log("Receipt IDs to check:", receiptIds);
+    console.log("Corresponding user IDs:", userIds);
 
-  console.log("Receipt IDs to check:", receiptIds);
-  console.log("Corresponding user IDs:", userIds);
+    const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+    for (const chunk of receiptIdChunks) {
+      try {
+        console.log(`Fetching receipts for chunk: ${chunk}`);
+        const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+        console.log("Receipts received:", receipts);
 
-  const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
-  for (const chunk of receiptIdChunks) {
-    try {
-      console.log(`Fetching receipts for chunk: ${chunk}`);
-      const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
-      console.log("Receipts received:", receipts);
+        for (const receiptId in receipts) {
+          const receipt = receipts[receiptId];
+          const ticketIndex = tickets.findIndex((t: any) => t.id === receiptId);
+          const userId = ticketIndex !== -1 ? userIds[ticketIndex] : "unknown";
 
-      for (const receiptId in receipts) {
-        const receipt = receipts[receiptId];
-        const ticketIndex = tickets.findIndex((t: any) => t.id === receiptId);
-        const userId = ticketIndex !== -1 ? userIds[ticketIndex] : "unknown";
-
-        if (receipt.status === "ok") {
-          console.log(
-            `Notification delivered successfully for user ${userId}, receipt ${receiptId}`
-          );
-        } else if (receipt.status === "error") {
-          console.error(
-            `Notification failed for user ${userId}, receipt ${receiptId}: ${receipt.message}`
-          );
-          if (receipt.details?.error) {
-            console.error(`Error code for ${userId}: ${receipt.details.error}`);
-            if (
-              receipt.details.error === "DeviceNotRegistered" ||
-              receipt.details.error === "InvalidCredentials"
-            ) {
-              await handleInvalidToken(userId, receiptId);
+          if (receipt.status === "ok") {
+            console.log(
+              `Notification delivered for user ${userId}, receipt ${receiptId}`
+            );
+          } else if (receipt.status === "error") {
+            console.error(
+              `Notification failed for user ${userId}, receipt ${receiptId}: ${receipt.message}`
+            );
+            if (receipt.details?.error) {
+              console.error(
+                `Error code for ${userId}: ${receipt.details.error}`
+              );
+              if (
+                receipt.details.error === "DeviceNotRegistered" ||
+                receipt.details.error === "InvalidCredentials"
+              ) {
+                await handleInvalidToken(userId, receiptId); // Use token from message
+              }
             }
           }
         }
+      } catch (error) {
+        console.error("Error fetching receipts for chunk:", error);
       }
-    } catch (error) {
-      console.error("Error fetching receipts for chunk:", error);
     }
+    console.log("Receipt check completed");
+    res.status(200).json({ message: "Receipts checked" });
+  } catch (error) {
+    console.error("Error in /check-receipts:", error);
+    res.status(500).json({ error: "Failed to check receipts" });
   }
-};
+});
 
 const handleInvalidToken = async (
   userId: string,
