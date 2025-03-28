@@ -238,14 +238,7 @@ export const BookHall = async (req: Request, res: Response) => {
               </tr>
             </table>
 
-            <!-- Action Button -->
-            // <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 20px;">
-            //   <tr>
-            //     <td align="center">
-            //       <a href="https://yourapp.com/halls" style="background-color: #4299e1; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; display: inline-block;">View All Halls</a>
-            //     </td>
-            //   </tr>
-            // </table>
+           
           </td>
         </tr>
 
@@ -272,7 +265,6 @@ export const BookHall = async (req: Request, res: Response) => {
       JSON.stringify(text),
       htmlContent
     );
-    // console.log({ sentMail });
     await bookingNotification(
       lectureHall.name,
       authorizedUser?.firstName as string,

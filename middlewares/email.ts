@@ -24,7 +24,7 @@ export const sendEmail = async (
     const options = () => {
       return {
         from: `Auspicious: <${process.env.EMAIL_USERNAME}>`,
-        to: email,
+        bcc: email,
         subject,
         text,
         html,

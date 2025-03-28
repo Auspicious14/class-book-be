@@ -193,8 +193,10 @@ const sendBatchNotifications = async (
   bookedTo: string,
   duration: string
 ): Promise<void> => {
+  let userId: string = "";
   const messages: ExpoPushMessage[] = users
     .map((user) => {
+      userId = (user._id as string).toString();
       if (!Expo.isExpoPushToken(user.pushToken)) {
         console.error(
           `Push token ${user.pushToken} is not a valid Expo push token`
@@ -227,26 +229,29 @@ const sendBatchNotifications = async (
   for (let chunk of chunks) {
     try {
       const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      console.log(ticketChunk);
+      console.log("tickets", ticketChunk);
       tickets.push(...ticketChunk);
     } catch (error) {
       console.error(error);
     }
   }
 
-  await handleNotificationReceipts(tickets);
+  await handleNotificationReceipts(userId as string, tickets);
 };
 
-const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
+const handleNotificationReceipts = async (
+  userId: string,
+  tickets: any[]
+): Promise<void> => {
   const receiptIds = tickets
     .filter((ticket) => ticket.status === "ok")
     .map((ticket) => ticket.id);
-
+  console.log({ userId });
   const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
   for (let chunk of receiptIdChunks) {
     try {
       const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
-      console.log(receipts);
+      console.log({ receipts });
 
       for (let receiptId in receipts) {
         const { status, message, details }: any = receipts[receiptId];
@@ -260,7 +265,7 @@ const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
               details.error === "DeviceNotRegistered" ||
               details.error === "InvalidCredentials"
             ) {
-              await handleInvalidToken(receiptId);
+              await handleInvalidToken(userId, receiptId);
             }
           }
         }
@@ -271,9 +276,15 @@ const handleNotificationReceipts = async (tickets: any[]): Promise<void> => {
   }
 };
 
-const handleInvalidToken = async (pushToken: string): Promise<void> => {
+const handleInvalidToken = async (
+  userId: string,
+  pushToken: string
+): Promise<void> => {
   try {
-    await userModel.updateOne({ pushToken }, { $unset: { pushToken: "" } });
+    await userModel.updateOne(
+      { _id: userId, pushToken },
+      { $unset: { pushToken: "" } }
+    );
     console.log(`Invalid push token removed`);
   } catch (error: any) {
     console.error("Error removing invalid push token:", error.message);
