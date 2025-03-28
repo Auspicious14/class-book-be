@@ -282,27 +282,56 @@ export const BookHall = async (req: Request, res: Response) => {
   }
 };
 
-export const checkAllHallsAvailability = async () => {
+export const checkAllHallsAvailability = async (): Promise<void> => {
+  console.log("Starting hall availability check");
   try {
     const halls = await lectureHallModel.find();
+    console.log(`Found ${halls.length} halls to check`);
+
+    const now = new Date();
 
     for (const hall of halls) {
       const lastBooking = hall.bookings[hall.bookings.length - 1];
 
-      if (lastBooking && new Date(lastBooking.bookedTo) < new Date()) {
-        if (!hall.available) {
-          hall.available = true;
-          await hall.save();
-          console.log(`Updated availability for hall: ${hall.name}`);
-        }
-      } else {
+      // Check if hall is currently booked
+      const isCurrentlyBooked =
+        lastBooking &&
+        new Date(lastBooking.bookedFrom) <= now &&
+        new Date(lastBooking.bookedTo) >= now;
+
+      if (isCurrentlyBooked) {
         if (hall.available) {
           hall.available = false;
           await hall.save();
-          console.log(`Updated unavailability for hall: ${hall.name}`);
+          console.log(
+            `Set ${hall.name} to unavailable - active booking from ${lastBooking.bookedFrom} to ${lastBooking.bookedTo}`
+          );
+        } else {
+          console.log(`${hall.name} already unavailable - active booking`);
+        }
+      } else {
+        // No active booking (either no bookings or last one ended)
+        if (
+          !hall.available &&
+          (!lastBooking || new Date(lastBooking.bookedTo) < now)
+        ) {
+          hall.available = true;
+          await hall.save();
+          console.log(
+            `Set ${hall.name} to available - no active booking (last ended: ${
+              lastBooking?.bookedTo || "none"
+            })`
+          );
+        } else {
+          console.log(
+            `${hall.name} status unchanged - ${
+              hall.available ? "already available" : "future booking pending"
+            }`
+          );
         }
       }
     }
+    console.log("Hall availability check completed");
   } catch (error) {
     console.error("Error checking and updating hall availability:", error);
   }
